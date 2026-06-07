@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Semver Checker - 语义化版本比较工具">
+<meta property="og:title" content="Semver Checker">
+<title>Semver Checker</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh}
+header{background:#161b22;border-bottom:1px solid #30363d;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+header h1{font-size:20px;color:#58a6ff}
+.lang-switch{display:flex;gap:4px}
+.lang-switch button{background:#21262d;color:#c9d1d9;border:1px solid #30363d;padding:6px 12px;border-radius:6px;cursor:pointer;font-size:13px}
+.lang-switch button.active{background:#1f6feb;border-color:#1f6feb;color:#fff}
+.container{max-width:800px;margin:0 auto;padding:24px}
+.compare-row{display:flex;gap:12px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.compare-row input{flex:1;min-width:150px;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;padding:12px 16px;border-radius:8px;font-size:16px;font-family:monospace;text-align:center}
+.compare-row input:focus{outline:none;border-color:#58a6ff}
+.compare-row .vs{color:#8b949e;font-weight:bold;font-size:20px}
+.result-card{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:20px;text-align:center;margin-bottom:16px}
+.result-icon{font-size:48px;margin-bottom:8px}
+.result-text{font-size:18px;font-weight:600}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+@media(max-width:600px){.detail-grid{grid-template-columns:1fr}}
+.detail{background:#161b22;border:1px solid #30363d;border-radius:8px;padding:16px}
+.detail-title{font-size:12px;color:#8b949e;margin-bottom:6px}
+.detail-value{font-family:monospace;font-size:16px}
+.version-list{background:#161b22;border:1px solid #30363d;border-radius:8px;overflow:hidden}
+.version-list .list-header{background:#21262d;padding:10px 16px;font-size:13px;font-weight:600;border-bottom:1px solid #30363d}
+.version-item{display:flex;justify-content:space-between;padding:8px 16px;border-bottom:1px solid #21262d;font-family:monospace;font-size:13px}
+.version-item:last-child{border-bottom:none}
+.btn{background:#21262d;color:#c9d1d9;border:1px solid #30363d;padding:8px 16px;border-radius:6px;cursor:pointer;font-size:13px}
+.btn:hover{background:#30363d}
+</style>
+</head>
+<body>
+<header>
+  <h1>📦 Semver Checker</h1>
+  <div class="lang-switch">
+    <button class="active" onclick="setLang('zh')">中文</button>
+    <button onclick="setLang('en')">EN</button>
+  </div>
+</header>
+<div class="container">
+  <div class="compare-row">
+    <input type="text" id="ver1" value="1.2.3" placeholder="版本1" oninput="compare()">
+    <span class="vs">vs</span>
+    <input type="text" id="ver2" value="1.3.0" placeholder="版本2" oninput="compare()">
+  </div>
+  <div class="result-card" id="resultCard">
+    <div class="result-icon" id="icon">❓</div>
+    <div class="result-text" id="text">输入两个版本号进行比较</div>
+  </div>
+  <div class="detail-grid">
+    <div class="detail"><div class="detail-title">版本1 解析</div><div class="detail-value" id="v1detail">-</div></div>
+    <div class="detail"><div class="detail-title">版本2 解析</div><div class="detail-value" id="v2detail">-</div></div>
+  </div>
+  <div class="version-list">
+    <div class="list-header">字段对比 / Field Comparison</div>
+    <div id="fieldComp"></div>
+  </div>
+</div>
+<script>
+var lang='zh';
+function setLang(l){lang=l;document.querySelectorAll('.lang-switch button').forEach(function(b,i){b.classList.toggle('active',(i===0&&l==='zh')||(i===1&&l==='en'))})}
+function parseVer(v){var m=v.match(/^(\d+)\.(\d+)\.(\d+)(?:-(.+))?(?:\+(.+))?$/);if(!m)return null;return{major:parseInt(m[1]),minor:parseInt(m[2]),patch:parseInt(m[3]),prerelease:m[4]||null,build:m[5]||null,raw:v}}
+function cmpVer(a,b){if(a.major!==b.major)return a.major>b.major?1:-1;if(a.minor!==b.minor)return a.minor>b.minor?1:-1;if(a.patch!==b.patch)return a.patch>b.patch?1:-1;if(!a.prerelease&&b.prerelease)return 1;if(a.prerelease&&!b.prerelease)return -1;if(a.prerelease&&b.prerelease){var ap=a.prerelease.split('.');var bp=b.prerelease.split('.');for(var i=0;i<Math.max(ap.length,bp.length);i++){if(i>=ap.length)return -1;if(i>=bp.length)return 1;var ai=isNaN(ap[i])?ap[i]:parseInt(ap[i]);var bi=isNaN(bp[i])?bp[i]:parseInt(bp[i]);if(typeof ai!==typeof bi)return typeof ai==='number'?-1:1;if(ai<bi)return -1;if(ai>bi)return 1}}return 0}
+function compare(){var v1=parseVer(document.getElementById('ver1').value);var v2=parseVer(document.getElementById('ver2').value);document.getElementById('v1detail').textContent=v1?v1.major+'.'+v1.minor+'.'+v1.patch+(v1.prerelease?'-'+v1.prerelease:'')+(v1.build?'+'+v1.build:''):'无效 Invalid';document.getElementById('v2detail').textContent=v2?v2.major+'.'+v2.minor+'.'+v2.patch+(v2.prerelease?'-'+v2.prerelease:'')+(v2.build?'+'+v2.build:''):'无效 Invalid';var icon=document.getElementById('icon'),text=document.getElementById('text'),card=document.getElementById('resultCard');if(!v1||!v2){icon.textContent='⚠️';text.innerHTML='请输入有效的语义化版本号<br>e.g. 1.2.3, 2.0.0-beta.1';card.style.borderColor='#d29922';return}var c=cmpVer(v1,v2);if(c===0){icon.textContent='🟰';text.innerHTML='<span style="color:#8b949e">'+v1.raw+' = '+v2.raw+'</span><br>两个版本完全相同';card.style.borderColor='#30363d'}else if(c<0){icon.textContent='⬆️';text.innerHTML='<span style="color:#3fb950">'+v2.raw+'</span> 比 <span style="color:#f85149">'+v1.raw+'</span> 更新<br>'+v1.raw+' < '+v2.raw;card.style.borderColor='#30363d'}else{icon.textContent='⬇️';text.innerHTML='<span style="color:#3fb950">'+v1.raw+'</span> 比 <span style="color:#f85149">'+v2.raw+'</span> 更新<br>'+v1.raw+' > '+v2.raw;card.style.borderColor='#30363d'}var fc='';if(v1&&v2){fc+='<div class="version-item"><span>Major</span><span>'+v1.major+(v1.major>v2.major?' > ':(v1.major<v2.major?' < ':' = '))+v2.major+'</span></div>';fc+='<div class="version-item"><span>Minor</span><span>'+v1.minor+(v1.minor>v2.minor?' > ':(v1.minor<v2.minor?' < ':' = '))+v2.minor+'</span></div>';fc+='<div class="version-item"><span>Patch</span><span>'+v1.patch+(v1.patch>v2.patch?' > ':(v1.patch<v2.patch?' < ':' = '))+v2.patch+'</span></div>';fc+='<div class="version-item"><span>预发布</span><span>'+(v1.prerelease||'无')+' vs '+(v2.prerelease||'无')+'</span></div>';fc+='<div class="version-item"><span>构建</span><span>'+(v1.build||'无')+' vs '+(v2.build||'无')+'</span></div>'}document.getElementById('fieldComp').innerHTML=fc}
+compare();
+</script>
+</body>
+</html>
